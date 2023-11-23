@@ -1,54 +1,114 @@
 import express from "express";
-import bodyParser from "body-parser";
 import axios from "axios";
+
 
 const app = express();
 const port = 3000;
+const API_URL = "https://secrets-api.appbrewery.com/";
 
-app.use(express.static("public"));
-app.use(bodyParser.urlencoded({ extended: true }));
+//TODO 1: Fill in your values for the 3 types of auth.
+const yourUsername = "";
+const yourPassword = "";
+const yourAPIKey = "";
+const yourBearerToken = "";
 
-// Step 1: Make sure that when a user visits the home page,
-//   it shows a random activity.You will need to check the format of the
-//   JSON data from response.data and edit the index.ejs file accordingly.
-app.get("/", async (req, res) => {
+app.get("/", (req, res) => {
+  res.render("index.ejs", { content: "API Response." });
+});
+
+app.get("/noAuth", async (req, res) => {
+  
   try {
-    const response = await axios.get("https://bored-api.appbrewery.com/random");
+    const response = await axios.get(`${API_URL}random`);
     const result = response.data;
     console.log(result);
-    res.render("index.ejs", { data: result });
+    res.render("index.ejs", {content: JSON.stringify(result)});
   } catch (error) {
-    console.error("Failed to make request:", error.message);
     res.render("index.ejs", {
       error: error.message,
     });
+    
   }
+  //TODO 2: Use axios to hit up the /random endpoint
+  //The data you get back should be sent to the ejs file as "content"
+  //Hint: make sure you use JSON.stringify to turn the JS object from axios into a string.
 });
 
-app.post("/", async (req, res) => {
-  console.log(req.body);
-
-  // Step 2: Play around with the drop downs and see what gets logged.
-  // Use axios to make an API request to the /filter endpoint. Making
-  // sure you're passing both the type and participants queries.
-  // Render the index.ejs file with a single *random* activity that comes back
-  // from the API request.
-  // Step 3: If you get a 404 error (resource not found) from the API request.
-  // Pass an error to the index.ejs to tell the user:
-  // "No activities that match your criteria."
+app.get("/basicAuth", async(req, res) => {
+  //TODO 3: Write your code here to hit up the /all endpoint
+  //Specify that you only want the secrets from page 2
+  //HINT: This is how you can use axios to do basic auth:
   try {
-    const response = await axios.get(`https://bored-api.appbrewery.com/filter?type=${req.body.type}&participants=${req.body.participants}`);
+    const response = await axios.get(`${API_URL}all`,{
+      auth:{
+        username:"shugela",
+        password:"12345"
+      }
+    });
     const result = response.data;
     console.log(result);
-    res.render("index.ejs", {   data: result[Math.floor(Math.random() * result.length)]});
+    res.render("index.ejs", {content: JSON.stringify(result)});
   } catch (error) {
-    console.error("Failed to make request:","No activities that match your criteria.");
     res.render("index.ejs", {
-      error: "No activities that match your criteria.",
+      error: error.message,
     });
+    
   }
+  // https://stackoverflow.com/a/74632908
+  /*
+   axios.get(URL, {
+      auth: {
+        username: "abc",
+        password: "123",
+      },
+    });
+  */
+});
+
+app.get("/apiKey", async (req, res) => {
+  //TODO 4: Write your code here to hit up the /filter endpoint
+  //Filter for all secrets with an embarassment score of 5 or greater
+    try {
+    const response = await axios.get(`${API_URL}filter?apiKey=${yourAPIKey}`);
+    const result = response.data;
+    console.log(result);
+    res.render("index.ejs", {content: JSON.stringify(result)});
+  } catch (error) {
+    res.render("index.ejs", {
+      error: error.message,
+    });
+    
+  }
+  //HINT: You need to provide a query parameter of apiKey in the request.
+});
+
+app.get("/bearerToken", async (req, res) => {
+  //TODO 5: Write your code here to hit up the /secrets/{id} endpoint
+  //and get the secret with id of 42
+  const id = 42;
+  try {
+    const response = await axios.get(`${API_URL}secrets/${id}`,{
+      headers:{
+        Authorization: `Bearer ${yourBearerToken}`
+      }
+    })
+    const result = response.data;
+    console.log(result);
+  res.render("index.ejs", {content: JSON.stringify(result)});
+  } catch (error) {
+    
+  }
+  //HINT: This is how you can use axios to do bearer token auth:
+  // https://stackoverflow.com/a/52645402
+  /*
+  axios.get(URL, {
+    headers: { 
+      Authorization: `Bearer <YOUR TOKEN HERE>` 
+    },
+  });
+  */
 });
 
 app.listen(port, () => {
-  console.log(`Server running on port: ${port}`);
+  console.log(`Server is running on port ${port}`);
 });
